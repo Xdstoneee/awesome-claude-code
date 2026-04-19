@@ -1,0 +1,60 @@
+# PALANTIR configuration
+# Edit refresh intervals, bounding boxes, and source-specific settings here.
+
+refresh_interval_seconds: 60   # how often to poll all sources
+
+# Optional geographic bounding box to limit aircraft/ship data
+# [lat_min, lon_min, lat_max, lon_max]
+# Omit or set to null for worldwide coverage.
+bbox: null
+# bbox: [24.0, -125.0, 50.0, -65.0]   # Continental US only
+
+sources:
+  aircraft:
+    enabled: true
+    # bbox override for ADS-B (uses global bbox if not set here)
+    bbox: null
+
+  maritime:
+    enabled: true
+    # Seconds to collect AIS messages per refresh cycle
+    collect_seconds: 10
+
+  seismic:
+    enabled: true
+    # Options: all_hour | all_day | significant_week
+    feed: all_day
+
+  weather:
+    enabled: true
+    # Optional 2-letter US state filter (null = all US)
+    area: null
+
+  fire:
+    enabled: true
+    day_range: 1   # 1 = last 24h
+
+  satellite:
+    enabled: true
+    # TLE groups to fetch from Celestrak
+    # Options: stations | visual | weather
+    groups:
+      - stations
+      - visual
+      - weather
+
+  events:
+    enabled: true
+    max_records: 300
+
+  traffic:
+    enabled: true
+    # US states to query (null = all supported states)
+    states: null
+    # states: [CA, MN]
+
+output:
+  directory: palantir/output/
+  geojson_file: latest.geojson
+  # Set to true to also write per-source GeoJSON files
+  per_source: false

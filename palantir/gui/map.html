@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PALANTIR MAP</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #080808; }
+    #map { width: 100%; height: 100vh; background: #080808; }
+
+    /* Override Leaflet defaults for dark theme */
+    .leaflet-container { background: #080808 !important; }
+    .leaflet-control-zoom a {
+      background: #0d0d0d !important;
+      color: #00ff41 !important;
+      border-color: #00ff41 !important;
+    }
+    .leaflet-control-zoom a:hover {
+      background: #00ff41 !important;
+      color: #080808 !important;
+    }
+    .leaflet-bar { border-color: #00ff41 !important; }
+
+    /* Dark popup */
+    .leaflet-popup-content-wrapper {
+      background: #0d0d0d;
+      border: 1px solid #00ff41;
+      border-radius: 0;
+      box-shadow: 0 0 12px rgba(0,255,65,0.3);
+    }
+    .leaflet-popup-tip { background: #0d0d0d; }
+    .leaflet-popup-content {
+      color: #00ff41;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 11px;
+      margin: 8px 12px;
+    }
+    .leaflet-popup-close-button { color: #00ff41 !important; }
+
+    /* Attribution */
+    .leaflet-control-attribution {
+      background: rgba(8,8,8,0.8) !important;
+      color: #005514 !important;
+      font-size: 9px;
+    }
+    .leaflet-control-attribution a { color: #00ff41 !important; }
+
+    /* Scanline overlay */
+    #scanlines {
+      pointer-events: none;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+    }
+
+    /* HUD corners */
+    #hud-tl, #hud-tr, #hud-bl, #hud-br {
+      position: fixed;
+      z-index: 1000;
+      width: 24px; height: 24px;
+      pointer-events: none;
+    }
+    #hud-tl { top: 8px; left: 8px;
+      border-top: 2px solid #00ff41; border-left: 2px solid #00ff41; }
+    #hud-tr { top: 8px; right: 8px;
+      border-top: 2px solid #00ff41; border-right: 2px solid #00ff41; }
+    #hud-bl { bottom: 8px; left: 8px;
+      border-bottom: 2px solid #00ff41; border-left: 2px solid #00ff41; }
+    #hud-br { bottom: 8px; right: 8px;
+      border-bottom: 2px solid #00ff41; border-right: 2px solid #00ff41; }
+
+    /* Counter overlay */
+    #counter {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      z-index: 1000;
+      background: rgba(13,13,13,0.85);
+      border: 1px solid #005514;
+      color: #005514;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 10px;
+      padding: 6px 10px;
+      pointer-events: none;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div id="scanlines"></div>
+  <div id="hud-tl"></div>
+  <div id="hud-tr"></div>
+  <div id="hud-bl"></div>
+  <div id="hud-br"></div>
+  <div id="map"></div>
+  <div id="counter">AWAITING DATA...</div>
+
+  <script>
+    // ── Map init ────────────────────────────────────────────────
+    var map = L.map('map', {
+      center: [20, 0],
+      zoom: 2,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    // CartoDB Dark Matter — free, no API key
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://openstreetmap.org">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // ── Layer groups (one per sensor type) ──────────────────────
+    var layerGroups = {};
+    var layerColors = {
+      aircraft:  '#00d4ff',
+      maritime:  '#00ff41',
+      seismic:   '#ff0040',
+      weather:   '#ffaa00',
+      fire:      '#ff6600',
+      satellite: '#cc00ff',
+      events:    '#ff00cc',
+      traffic:   '#ffff00',
+    };
+    var layerVisible = {};
+    Object.keys(layerColors).forEach(function(l) {
+      layerGroups[l]  = L.layerGroup().addTo(map);
+      layerVisible[l] = true;
+    });
+
+    // ── Marker factory ───────────────────────────────────────────
+    function makeMarker(feature) {
+      var props  = feature.properties;
+      var layer  = props.layer;
+      var color  = layerColors[layer] || '#ffffff';
+      var coords = feature.geometry.coordinates;
+
+      // Size by severity / importance
+      var radius = 4;
+      if (layer === 'seismic') {
+        var mag = parseFloat(props.magnitude || 0);
+        radius = Math.max(4, mag * 3);
+      } else if (layer === 'fire') {
+        radius = 5;
+      } else if (layer === 'weather') {
+        radius = 7;
+      } else if (layer === 'satellite') {
+        radius = 3;
+      }
+
+      var marker = L.circleMarker([coords[1], coords[0]], {
+        radius:      radius,
+        color:       color,
+        fillColor:   color,
+        fillOpacity: layer === 'aircraft' ? 0.6 : 0.75,
+        weight:      1,
+        opacity:     0.9,
+      });
+
+      // Build popup
+      var html = '<div style="color:' + color + '">';
+      html += '<b>' + escHtml(props.label) + '</b><br/>';
+      html += '<span style="color:#005514">SRC: </span>' + escHtml(props.source) + '<br/>';
+      html += '<span style="color:#005514">TIME: </span>' + escHtml((props.observed_at || '').slice(0,19).replace('T',' ')) + ' UTC<br/>';
+      if (props.altitude_m != null)
+        html += '<span style="color:#005514">ALT: </span>' + Math.round(props.altitude_m) + ' m<br/>';
+      if (props.speed_ms != null)
+        html += '<span style="color:#005514">SPD: </span>' + Math.round(props.speed_ms * 1.944) + ' kt<br/>';
+      if (props.heading_deg != null)
+        html += '<span style="color:#005514">HDG: </span>' + Math.round(props.heading_deg) + '°<br/>';
+      // Extra props
+      var skip = ['layer','source','uid','label','observed_at','altitude_m','speed_ms','heading_deg'];
+      Object.keys(props).forEach(function(k) {
+        if (skip.indexOf(k) === -1 && props[k] !== '' && props[k] !== null) {
+          var v = String(props[k]);
+          if (v.length > 80) v = v.slice(0, 77) + '...';
+          html += '<span style="color:#005514">' + escHtml(k.toUpperCase()) + ': </span>' + escHtml(v) + '<br/>';
+        }
+      });
+      html += '</div>';
+      marker.bindPopup(html, { maxWidth: 300 });
+
+      return marker;
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Main update function called from Python ──────────────────
+    function updateMarkers(geojson) {
+      // Clear all layer groups
+      Object.values(layerGroups).forEach(function(g) { g.clearLayers(); });
+
+      if (!geojson || !geojson.features) return;
+
+      var counts = {};
+      geojson.features.forEach(function(feature) {
+        if (!feature.geometry || feature.geometry.type !== 'Point') return;
+        var layer = feature.properties.layer;
+        if (!layerGroups[layer]) {
+          layerGroups[layer] = L.layerGroup().addTo(map);
+          layerVisible[layer] = true;
+        }
+        if (!counts[layer]) counts[layer] = 0;
+        counts[layer]++;
+        if (layerVisible[layer]) {
+          layerGroups[layer].addLayer(makeMarker(feature));
+        }
+      });
+
+      // Update counter
+      var lines = Object.keys(counts).map(function(l) {
+        var color = layerColors[l] || '#fff';
+        return '<span style="color:' + color + '">' +
+               l.toUpperCase().padEnd(10,' ') + ': ' + String(counts[l]).padStart(6,' ') +
+               '</span>';
+      });
+      document.getElementById('counter').innerHTML = lines.join('<br/>') || 'NO DATA';
+    }
+
+    // Toggle a layer on/off (called from Python)
+    function toggleLayer(layerName, visible) {
+      layerVisible[layerName] = visible;
+      if (visible) {
+        map.addLayer(layerGroups[layerName]);
+      } else {
+        map.removeLayer(layerGroups[layerName]);
+      }
+    }
+
+    // Flash the HUD corners (called on data update)
+    function flashHUD() {
+      var els = document.querySelectorAll('#hud-tl,#hud-tr,#hud-bl,#hud-br');
+      els.forEach(function(el) {
+        el.style.borderColor = '#ffffff';
+        setTimeout(function() { el.style.borderColor = '#00ff41'; }, 150);
+      });
+    }
+  </script>
+</body>
+</html>

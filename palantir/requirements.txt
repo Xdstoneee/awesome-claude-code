@@ -1,0 +1,20 @@
+# PALANTIR — required
+PyQt6>=6.6.0
+PyQt6-WebEngine>=6.6.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# AIS maritime feed (WebSocket stream)
+websocket-client>=1.7.0
+
+# Satellite orbit propagation (optional — enables live sat positions)
+# sgp4>=2.23
+
+# Install all required:
+#   pip install -r palantir/requirements.txt
+#
+# On Linux you may also need:
+#   sudo apt install libxcb-cursor0 libxcb-xinerama0
+#   (or equivalent for your distro)
+#
+# On Windows: just pip install — everything is bundled.
