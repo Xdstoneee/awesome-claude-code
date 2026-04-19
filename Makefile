@@ -7,11 +7,13 @@ else
 endif
 SCRIPTS_DIR := ./scripts
 
-.PHONY: help validate validate-single validate-toc test coverage generate generate-toc-assets test-regenerate test-regenerate-no-cleanup test-regenerate-allow-diff test-regenerate-cycle docs-tree docs-tree-check download-resources add_resource add-category sort format format-check generate-resource-id mypy ci clean clean-all
+.PHONY: help validate validate-single validate-toc test coverage generate generate-toc-assets test-regenerate test-regenerate-no-cleanup test-regenerate-allow-diff test-regenerate-cycle docs-tree docs-tree-check download-resources add_resource add-category sort format format-check generate-resource-id mypy ci clean clean-all aggregate aggregate-free
 
 help:
 	@echo "Available commands:"
 	@echo "  make add-category      - Add a new category to the repository"
+	@echo "  make aggregate         - Run all ecosystem data sources (set env vars for paid/key sources)"
+	@echo "  make aggregate-free    - Run only free/no-auth sources (npm, PyPI, HN, Reddit, VSCode)"
 	@echo "  make validate          - Validate all links in the resource CSV"
 	@echo "  make validate-single URL=<url> - Validate a single resource URL"
 	@echo "  make validate-toc      - Validate TOC anchors against GitHub HTML"
@@ -262,6 +264,27 @@ install:
 	@$(PYTHON) -m pip install -e ".[dev]"
 	@echo "Installation complete!"
 
+# ─── Multi-source aggregator ("God's Eye" ecosystem pulse) ───────────────────
+# See templates/aggregator-config.yaml for env var setup guide.
+#   Free sources:  npm, PyPI, HackerNews, Reddit, VS Code Marketplace
+#   Free w/ key:   YouTube (YOUTUBE_API_KEY)
+#   Paid:          Twitter/X (TWITTER_BEARER_TOKEN, ~$100/mo Basic tier)
+
+SOURCES ?=
+
+aggregate:
+	@echo "Running ecosystem aggregator (all configured sources)..."
+	@if [ -n "$(SOURCES)" ]; then \
+		$(PYTHON) -m scripts.aggregator.aggregate --sources $(SOURCES); \
+	else \
+		$(PYTHON) -m scripts.aggregator.aggregate; \
+	fi
+
+aggregate-free:
+	@echo "Running ecosystem aggregator (free sources only)..."
+	$(PYTHON) -m scripts.aggregator.aggregate --sources npm pypi hackernews reddit vscode
+
+# ─── Add a new category to the repository ────────────────────────────────────
 # Add a new category to the repository
 add-category:
 	@echo "Starting category addition tool..."

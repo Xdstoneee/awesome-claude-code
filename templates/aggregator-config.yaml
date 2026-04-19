@@ -1,0 +1,154 @@
+# Multi-source aggregator configuration
+# "God's Eye" view of the Claude Code ecosystem
+#
+# This file documents all data sources, their cost/access tiers,
+# required env vars, and what signal they provide.
+#
+# Run:  make aggregate              (all sources)
+#       make aggregate SOURCES="npm pypi hackernews"  (specific sources)
+
+aggregator:
+  description: >
+    Aggregates real-time signals about the Claude Code ecosystem from multiple
+    free and paid data sources into a unified intelligence view.
+
+sources:
+
+  # ─── Free, no auth required ───────────────────────────────────────────────
+
+  github:
+    tier: free
+    auth_required: false
+    env_vars:
+      GITHUB_TOKEN: "Optional — avoids rate limits (5000 req/hr vs 60 req/hr)"
+    signals:
+      - Repository stars, forks, watchers
+      - Delta tracking (growth velocity)
+      - Release cadence and versions
+      - Repo health and last-commit recency
+    rate_limit: "60 req/hr unauthenticated, 5000 req/hr with token"
+    notes: >
+      Already integrated via scripts/ticker/ and scripts/maintenance/.
+      The aggregator enhances this with deeper repo-level intelligence.
+
+  npm:
+    tier: free
+    auth_required: false
+    env_vars: {}
+    signals:
+      - Monthly download counts for claude-code JS/TS packages
+      - Package discovery via npm search
+      - Version and publish metadata
+    rate_limit: "Generous — no documented hard limit"
+    api_docs: "https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md"
+
+  pypi:
+    tier: free
+    auth_required: false
+    env_vars: {}
+    signals:
+      - Daily/weekly/monthly downloads for Python packages
+      - Package metadata (version, summary, homepage)
+    rate_limit: "No documented limit on pypistats.org"
+    api_docs: "https://pypistats.org/api/"
+
+  hackernews:
+    tier: free
+    auth_required: false
+    env_vars: {}
+    signals:
+      - Story mentions with points and comment counts
+      - Community sentiment proxy via upvotes
+      - Discussion threads about Claude Code
+    rate_limit: "Very generous Algolia-powered API"
+    api_docs: "https://hn.algolia.com/api"
+
+  reddit:
+    tier: free
+    auth_required: false  # optional OAuth for higher limits
+    env_vars:
+      REDDIT_CLIENT_ID: "Optional — register free app at reddit.com/prefs/apps"
+      REDDIT_CLIENT_SECRET: "Optional — goes with REDDIT_CLIENT_ID"
+    signals:
+      - Post scores and comment counts from Claude-adjacent subreddits
+      - Community discussion topics and sentiment
+      - Subreddit: ClaudeAI, LocalLLaMA, AIAssistants, MachineLearning
+    rate_limit: "Public API: ~1 req/sec; OAuth: 60 req/min"
+    api_docs: "https://www.reddit.com/dev/api/"
+
+  vscode:
+    tier: free
+    auth_required: false
+    env_vars: {}
+    signals:
+      - Extension install counts
+      - Average ratings and rating counts
+      - Last-updated timestamps
+    rate_limit: "No documented limit on the public Gallery API"
+    api_docs: "https://github.com/microsoft/vscode/blob/main/src/vs/platform/extensionManagement/common/extensionGalleryService.ts"
+
+  # ─── Free with API key ─────────────────────────────────────────────────────
+
+  youtube:
+    tier: free_with_key
+    auth_required: true
+    cost: "Free — 10,000 units/day; search costs 100 units"
+    env_vars:
+      YOUTUBE_API_KEY: "Get at console.cloud.google.com → YouTube Data API v3"
+    signals:
+      - View counts, likes, comment counts for tutorial videos
+      - Channel-level reach for Claude Code content creators
+      - Content trend discovery via keyword search
+    rate_limit: "10,000 units/day free; search = 100 units, video detail = 1 unit"
+    api_docs: "https://developers.google.com/youtube/v3/docs"
+    setup: |
+      1. Go to console.cloud.google.com
+      2. Create/select a project
+      3. Enable "YouTube Data API v3"
+      4. Create an API key under Credentials
+      5. export YOUTUBE_API_KEY=<your-key>
+
+  # ─── Paid sources ──────────────────────────────────────────────────────────
+
+  twitter:
+    tier: paid
+    auth_required: true
+    cost: "Basic tier: ~$100/month; Pro: ~$5,000/month"
+    env_vars:
+      TWITTER_BEARER_TOKEN: "Twitter Developer Portal → App → Bearer Token"
+    signals:
+      - Real-time tweet mentions and engagement (likes, retweets, replies)
+      - Influencer reach for Claude Code mentions
+      - Emerging topic discovery via recent search
+    rate_limit: "Basic: 10k tweets/month; Pro: 1M tweets/month"
+    api_docs: "https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent"
+    setup: |
+      1. Apply at developer.twitter.com
+      2. Create a Project and App
+      3. Subscribe to Basic tier (~$100/mo) for recent search access
+      4. Copy the Bearer Token from your app dashboard
+      5. export TWITTER_BEARER_TOKEN=<your-token>
+
+# ─── Search terms used across sources ────────────────────────────────────────
+search_terms:
+  primary:
+    - "claude code"
+    - "claude-code"
+  extended:
+    - "anthropic claude code"
+    - "Claude Code CLI"
+    - "claude code agent"
+    - "claude code workflow"
+
+# ─── Output configuration ─────────────────────────────────────────────────────
+output:
+  directory: "data/aggregated/"
+  files:
+    npm: "npm-pulse.csv"
+    pypi: "pypi-pulse.csv"
+    hackernews: "hackernews-pulse.csv"
+    reddit: "reddit-pulse.csv"
+    vscode: "vscode-pulse.csv"
+    twitter: "twitter-pulse.csv"
+    youtube: "youtube-pulse.csv"
+    summary: "ecosystem-pulse.csv"
