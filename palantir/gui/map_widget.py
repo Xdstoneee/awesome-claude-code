@@ -46,8 +46,16 @@ class MapWidget(QWebEngineView):
         self.load(QUrl.fromLocalFile(str(self._tmp_html)))
 
     def _on_loaded(self, ok: bool) -> None:
-        self._loaded = ok
-        if ok and self._pending_geojson is not None:
+        # Mark loaded regardless of ok — WebEngine fires ok=False when any
+        # sub-resource (CDN script, favicon) fails even if the page itself ran.
+        self._loaded = True
+        if self._pending_geojson is not None:
+            # Small delay lets the JS engine finish initialising after load
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(500, lambda: self._push_pending())
+
+    def _push_pending(self) -> None:
+        if self._pending_geojson is not None:
             self._push(self._pending_geojson)
             self._pending_geojson = None
 
