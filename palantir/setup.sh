@@ -5,7 +5,8 @@
 set -e
 
 PYTHON=${PYTHON:-python3}
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PALANTIR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$PALANTIR_DIR")"
 
 echo ""
 echo "  ██████╗  █████╗ ██╗      █████╗ ███╗   ██╗████████╗██╗██████╗ "
