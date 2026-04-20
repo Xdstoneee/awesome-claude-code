@@ -2,7 +2,6 @@
 # PALANTIR — one-shot setup script
 # Works on: Kali/Debian/Ubuntu (native + WSL), macOS
 # On Windows (no WSL): use setup.bat instead
-set -e
 
 PYTHON=${PYTHON:-python3}
 PALANTIR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,51 +25,24 @@ IS_WSL=false
 IS_WSLG=false
 if grep -qi microsoft /proc/version 2>/dev/null; then
     IS_WSL=true
-    if [ -d /mnt/wslg ]; then
-        IS_WSLG=true
-    fi
+    [ -d /mnt/wslg ] && IS_WSLG=true
 fi
 
 # ── 1. System dependencies ───────────────────────────────────────────────────
 if [[ "$OSTYPE" == "linux"* ]]; then
     echo "[1/5] Installing system libraries..."
-    # Newer Debian/Kali use t64 suffix for some libs — try both names
-    PKGS=(
-        # Qt core
-        libgl1 libegl1 libglib2.0-0 libdbus-1-3
-        # XKB keyboard (two separate packages both required)
-        libxkbcommon0 libxkbcommon-x11-0
-        # XCB / X11 (confirmed via ldd on Qt 6.11 platform plugin)
-        libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0
-        libxcb-keysyms1 libxcb-randr0 libxcb-render-util0
-        libxcb-shape0 libxcb-xfixes0 libxcb-util1 libxcb-xkb1
-        # Qt WebEngine (Chromium)
-        libxdamage1 libxrandr2 libxtst6 libnss3 libnspr4
-        # Font rendering
-        libfontconfig1 libfreetype6
-    )
-    # These libs may appear as plain or t64 variant depending on distro age
-    T64_PKGS=(libxcomposite1 libasound2)
-    for pkg in "${T64_PKGS[@]}"; do
-        if apt-cache show "${pkg}t64" &>/dev/null 2>&1; then
-            PKGS+=("${pkg}t64")
-        else
-            PKGS+=("$pkg")
-        fi
-    done
 
-    MISSING=()
-    for pkg in "${PKGS[@]}"; do
-        dpkg -s "$pkg" &>/dev/null || MISSING+=("$pkg")
-    done
-    if [ ${#MISSING[@]} -gt 0 ]; then
-        echo "  Installing: ${MISSING[*]}"
-        sudo apt-get install -y "${MISSING[@]}" 2>&1 | grep -E "(Setting up|already|error)" || true
-    else
-        echo "  ✓ All system libraries present"
-    fi
-    # Refresh linker cache so newly installed .so files are found immediately
+    # Let apt resolve ALL Qt deps by installing the system Qt packages.
+    # We don't use them directly (we use the venv's PyQt6) but this pulls
+    # every required .so onto the system with correct symlinks — no guessing.
+    sudo apt-get install -y --no-install-recommends \
+        python3-pyqt6 \
+        python3-pyqt6.qtwebengine \
+        2>&1 | grep -E "(Setting up|already the newest|error)" || true
+
+    # Refresh linker cache
     sudo ldconfig 2>/dev/null || true
+    echo "  ✓ System libraries ready"
 else
     echo "[1/5] macOS — skipping apt installs"
 fi
@@ -106,6 +78,7 @@ echo "  ✓ Packages installed"
 
 # ── 5. Verify imports ────────────────────────────────────────────────────────
 echo "[5/5] Verifying install..."
+VERIFY_OK=true
 $PYTHON_VENV -c "
 import sys
 ok = True
@@ -117,7 +90,7 @@ for mod in ['PyQt6.QtWidgets', 'PyQt6.QtWebEngineWidgets', 'requests', 'websocke
         print(f'  ✗ {mod}: {e}')
         ok = False
 sys.exit(0 if ok else 1)
-" || { echo "  Import verification failed — check errors above"; exit 1; }
+" || VERIFY_OK=false
 
 # ── .env file ────────────────────────────────────────────────────────────────
 if [ ! -f "$REPO_DIR/.env" ]; then
@@ -125,60 +98,59 @@ if [ ! -f "$REPO_DIR/.env" ]; then
     echo "  ✓ Created .env — add API keys there to unlock more sources"
 fi
 
-# ── Detect display / WSL config and write run.sh ─────────────────────────────
+# ── Write run.sh — always, even if verify had warnings ───────────────────────
 echo ""
-echo "Configuring display for your environment..."
-
-QT_VARS=""
+echo "Configuring display..."
 
 if [ "$IS_WSL" = true ]; then
     if [ "$IS_WSLG" = true ]; then
-        # Windows 11 WSLg — Wayland/X11 forwarding built in
-        echo "  ✓ Detected WSLg (Windows 11) — using built-in display forwarding"
-        QT_VARS='export DISPLAY=${DISPLAY:-:0}
+        echo "  ✓ WSLg (Windows 11) detected"
+        QT_ENV='export DISPLAY=${DISPLAY:-:0}
 export WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}
 export QT_QPA_PLATFORM=xcb
 export LIBGL_ALWAYS_SOFTWARE=1
 export QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox --disable-gpu"'
     else
-        # Windows 10 WSL — needs X server on Windows side
         WIN_IP=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | head -1)
-        echo "  ! Detected WSL without WSLg (Windows 10)"
-        echo "    You need VcXsrv running on Windows with 'Disable access control' checked"
-        echo "    Download: https://sourceforge.net/projects/vcxsrv/"
-        QT_VARS="export DISPLAY=${WIN_IP}:0.0
+        echo "  ! WSL without WSLg — needs VcXsrv on Windows (sourceforge.net/projects/vcxsrv)"
+        QT_ENV="export DISPLAY=${WIN_IP}:0.0
 export QT_QPA_PLATFORM=xcb
 export LIBGL_ALWAYS_SOFTWARE=1
 export QTWEBENGINE_CHROMIUM_FLAGS=\"--no-sandbox --disable-gpu\""
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "  ✓ macOS detected"
-    QT_VARS='export QT_QPA_PLATFORM=cocoa'
+    echo "  ✓ macOS"
+    QT_ENV='export QT_QPA_PLATFORM=cocoa'
 else
-    # Native Linux
-    echo "  ✓ Native Linux — using system display"
-    QT_VARS='export DISPLAY=${DISPLAY:-:0}
+    echo "  ✓ Native Linux"
+    QT_ENV='export DISPLAY=${DISPLAY:-:0}
 export QT_QPA_PLATFORM=xcb
 export QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox"'
 fi
 
-# Write the launcher script
 cat > "$RUN_SCRIPT" << LAUNCHER
 #!/usr/bin/env bash
-# Auto-generated by palantir/setup.sh — re-run setup.sh to regenerate
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 cd "\$SCRIPT_DIR"
-${QT_VARS}
+${QT_ENV}
 exec "\$SCRIPT_DIR/venv/bin/python" -m palantir "\$@"
 LAUNCHER
 chmod +x "$RUN_SCRIPT"
-echo "  ✓ Created run.sh launcher"
+echo "  ✓ run.sh created"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
-echo "  ╔══════════════════════════════════════╗"
-echo "  ║  Setup complete. Launch with:        ║"
-echo "  ║                                      ║"
-echo "  ║    bash run.sh                       ║"
-echo "  ╚══════════════════════════════════════╝"
+if [ "$VERIFY_OK" = true ]; then
+    echo "  ╔══════════════════════════════════════╗"
+    echo "  ║  Setup complete. Launch with:        ║"
+    echo "  ║                                      ║"
+    echo "  ║    bash run.sh                       ║"
+    echo "  ╚══════════════════════════════════════╝"
+else
+    echo "  ╔══════════════════════════════════════════════════════╗"
+    echo "  ║  WARNING: some imports failed (see above)            ║"
+    echo "  ║  Try launching anyway — bash run.sh                  ║"
+    echo "  ║  If it crashes, run: bash palantir/setup.sh again    ║"
+    echo "  ╚══════════════════════════════════════════════════════╝"
+fi
 echo ""
