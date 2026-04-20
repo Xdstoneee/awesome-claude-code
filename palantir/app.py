@@ -28,8 +28,9 @@ from pathlib import Path
 
 def launch_gui() -> int:
     try:
-        from PyQt6.QtWidgets import QApplication
         from PyQt6.QtCore import Qt
+        from PyQt6.QtWebEngineWidgets import QWebEngineView  # must be before QApplication
+        from PyQt6.QtWidgets import QApplication
     except ImportError as e:
         print(
             f"ERROR: PyQt6 import failed — {e}\n\n"
