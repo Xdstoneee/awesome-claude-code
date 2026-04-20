@@ -25,7 +25,7 @@ from palantir.models import GeoRecord, Layer, SourceResult
 
 # GDELT GKG 15-minute rolling update file list
 _LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
-_EVENTS_LASTUPDATE = "http://data.gdeltproject.org/events/lastupdate.txt"
+_EVENTS_LASTUPDATE = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 _TIMEOUT = 30
 
 # CAMEO action codes for filtering by event type

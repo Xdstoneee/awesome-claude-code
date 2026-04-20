@@ -38,9 +38,9 @@ _CELESTRAK_TLE  = "https://celestrak.org/pub/TLE/{group}.txt"
 
 # Well-maintained small catalogue lists
 _GROUPS = {
-    "stations": "https://celestrak.org/pub/TLE/stations.txt",
-    "visual":   "https://celestrak.org/pub/TLE/visual.txt",
-    "weather":  "https://celestrak.org/pub/TLE/weather.txt",
+    "stations": "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=TLE",
+    "visual":   "https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=TLE",
+    "weather":  "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=TLE",
 }
 
 
