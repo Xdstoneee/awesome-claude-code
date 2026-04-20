@@ -23,13 +23,15 @@ echo ""
 if [[ "$OSTYPE" == "linux"* ]]; then
     echo "[1/4] Installing system libraries..."
     PKGS=(
-        libgl1           # OpenGL — required by Qt
-        libegl1          # EGL — required by Qt WebEngine
-        libxcb-cursor0   # XCB cursor — required by Qt on X11
-        libxcb-xinerama0 # XCB xinerama
-        libglib2.0-0     # GLib — Qt dependency
-        libdbus-1-3      # D-Bus — Qt dependency
-        libxkbcommon0    # keyboard handling
+        # Qt core
+        libgl1 libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0
+        # XCB / X11 — Qt widgets
+        libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0
+        libxcb-keysyms1 libxcb-randr0 libxcb-render-util0
+        libxcb-shape0 libxcb-xfixes0 libxcb-util1
+        # Qt WebEngine (Chromium-based) — the needy one
+        libxcomposite1 libxdamage1 libxrandr2 libxtst6
+        libnss3 libnspr4 libasound2
     )
     MISSING=()
     for pkg in "${PKGS[@]}"; do
@@ -95,7 +97,7 @@ for mod, pkg in [
         print(f'  ✗ {mod}: {e}')
         failures.append(pkg)
 if failures:
-    print(f'\nFailed imports. Try: sudo apt install libgl1 libegl1 libxcb-cursor0')
+    print(f'\nFailed imports — re-run: bash palantir/setup.sh')
     sys.exit(1)
 "
 
