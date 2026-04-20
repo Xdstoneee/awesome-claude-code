@@ -30,11 +30,15 @@ def launch_gui() -> int:
     try:
         from PyQt6.QtWidgets import QApplication
         from PyQt6.QtCore import Qt
-    except ImportError:
+    except ImportError as e:
         print(
-            "ERROR: PyQt6 not installed.\n"
-            "  pip install PyQt6 PyQt6-WebEngine\n"
-            "(On Linux you may also need: apt install libxcb-cursor0)",
+            f"ERROR: PyQt6 import failed — {e}\n\n"
+            "  Run the setup script to fix automatically:\n"
+            "    bash palantir/setup.sh          (Linux/WSL/macOS)\n"
+            "    palantir\\setup.bat              (Windows)\n\n"
+            "  Or manually:\n"
+            "    sudo apt install libgl1 libegl1 libxcb-cursor0   # Linux/WSL\n"
+            "    pip install PyQt6 PyQt6-WebEngine",
             file=sys.stderr,
         )
         return 1
