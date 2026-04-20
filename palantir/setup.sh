@@ -34,6 +34,7 @@ fi
 # ── 1. System dependencies ───────────────────────────────────────────────────
 if [[ "$OSTYPE" == "linux"* ]]; then
     echo "[1/5] Installing system libraries..."
+    # Newer Debian/Kali use t64 suffix for some libs — try both names
     PKGS=(
         # Qt core
         libgl1 libegl1 libglib2.0-0 libdbus-1-3 libxkbcommon0
@@ -41,12 +42,21 @@ if [[ "$OSTYPE" == "linux"* ]]; then
         libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0
         libxcb-keysyms1 libxcb-randr0 libxcb-render-util0
         libxcb-shape0 libxcb-xfixes0 libxcb-util1
-        # Qt WebEngine (Chromium) — extensive deps
-        libxcomposite1 libxdamage1 libxrandr2 libxtst6
-        libnss3 libnspr4 libasound2
-        # Font rendering (prevents blank text in WebEngine)
+        # Qt WebEngine (Chromium)
+        libxdamage1 libxrandr2 libxtst6 libnss3 libnspr4
+        # Font rendering
         libfontconfig1 libfreetype6
     )
+    # These libs may appear as plain or t64 variant depending on distro age
+    T64_PKGS=(libxcomposite1 libasound2)
+    for pkg in "${T64_PKGS[@]}"; do
+        if apt-cache show "${pkg}t64" &>/dev/null 2>&1; then
+            PKGS+=("${pkg}t64")
+        else
+            PKGS+=("$pkg")
+        fi
+    done
+
     MISSING=()
     for pkg in "${PKGS[@]}"; do
         dpkg -s "$pkg" &>/dev/null || MISSING+=("$pkg")
@@ -57,6 +67,8 @@ if [[ "$OSTYPE" == "linux"* ]]; then
     else
         echo "  ✓ All system libraries present"
     fi
+    # Refresh linker cache so newly installed .so files are found immediately
+    sudo ldconfig 2>/dev/null || true
 else
     echo "[1/5] macOS — skipping apt installs"
 fi
