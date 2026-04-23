@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stonevisions.net — Darrian / r3x</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #d4ff3a;
+      --bg: #0b0c0a;
+      --bg2: #111310;
+      --dim: #2a2d24;
+      --muted: #6b7060;
+      --text: #d8dcd0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── animated grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(212,255,58,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212,255,58,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── scanlines ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,.18) 2px,
+        rgba(0,0,0,.18) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── header / hero ── */
+    header {
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.4rem, 7vw, 4.2rem);
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -1px;
+      line-height: 1.05;
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-weight: 300;
+      font-style: italic;
+    }
+
+    .tagline {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .prompt {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--green);
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 9px;
+      height: 1.1em;
+      background: var(--green);
+      animation: blink .9s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ── nav ── */
+    nav {
+      padding: 20px 0;
+      display: flex;
+      gap: 32px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
+    nav a:hover { color: var(--green); }
+
+    /* ── section headings ── */
+    .section-label {
+      font-size: 11px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 32px;
+      padding-top: 56px;
+    }
+
+    .section-label::before {
+      content: '// ';
+      color: var(--muted);
+    }
+
+    /* ── service cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding-bottom: 56px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--dim);
+      padding: 28px 24px;
+      position: relative;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .card:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 18px rgba(212,255,58,.07);
+    }
+
+    .card-tag {
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+
+    .card h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+
+    .card p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    /* ── about ── */
+    .about {
+      padding-bottom: 56px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .about p {
+      max-width: 600px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.9;
+      margin-bottom: 16px;
+    }
+
+    .about p:last-child { margin-bottom: 0; }
+
+    .highlight { color: var(--green); }
+
+    /* ── contact ── */
+    .contact {
+      padding: 56px 0;
+    }
+
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    .contact-block {
+      flex: 1 1 220px;
+    }
+
+    .contact-label {
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .contact-value {
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .contact-value a {
+      color: var(--green);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color .15s;
+    }
+
+    .contact-value a:hover {
+      border-color: var(--green);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 7px;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(212,255,58,.5); }
+      50%       { opacity: .7; box-shadow: 0 0 0 5px rgba(212,255,58,0); }
+    }
+
+    /* ── footer ── */
+    footer {
+      border-top: 1px solid var(--dim);
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer span {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .06em;
+    }
+
+    /* ── mobile ── */
+    @media (max-width: 520px) {
+      header { padding: 48px 0 40px; }
+      .cards { grid-template-columns: 1fr; }
+      nav { gap: 20px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <div class="logo">stone<span>visions</span></div>
+      <div class="tagline">Security consulting &amp; research — Fargo, ND</div>
+      <div class="prompt">
+        <span>r3x@stonevisions:~$</span>
+        <span class="cursor"></span>
+      </div>
+    </header>
+
+    <nav>
+      <a href="#services">Services</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <!-- services -->
+    <div id="services">
+      <div class="section-label">services</div>
+      <div class="cards">
+
+        <div class="card">
+          <div class="card-tag">01</div>
+          <h3>Pentesting</h3>
+          <p>Network, web app, and infrastructure assessments. Real-world adversary simulation with clear, actionable reporting.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-tag">02</div>
+          <h3>Security Audits</h3>
+          <p>Thorough reviews of architecture, code, and policy. Identify gaps before attackers do.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-tag">03</div>
+          <h3>Digital Forensics</h3>
+          <p>Incident investigation, disk and memory analysis, chain-of-custody documentation for legal and compliance needs.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-tag">04</div>
+          <h3>AI Security &amp; Integration</h3>
+          <p>LLM threat modeling, prompt injection testing, and secure AI system design. Helping teams ship AI responsibly.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- about -->
+    <div id="about">
+      <div class="section-label">about</div>
+      <div class="about">
+        <p>
+          I'm <span class="highlight">Darrian</span>, an independent information security consultant based in <span class="highlight">Fargo, ND</span>.
+          I work with small businesses, startups, and individuals who need serious security expertise without enterprise overhead.
+        </p>
+        <p>
+          My background spans offensive security, digital forensics, and emerging AI threats.
+          Whether you need a one-time assessment or an ongoing security partner, I keep it direct and technical.
+        </p>
+      </div>
+    </div>
+
+    <!-- contact -->
+    <div id="contact">
+      <div class="section-label">contact</div>
+      <div class="contact">
+        <div class="contact-row">
+
+          <div class="contact-block">
+            <div class="contact-label">email</div>
+            <div class="contact-value">
+              <a href="mailto:Darrian@stonevisions.net">Darrian@stonevisions.net</a>
+            </div>
+          </div>
+
+          <div class="contact-block">
+            <div class="contact-label">location</div>
+            <div class="contact-value">Fargo, ND</div>
+          </div>
+
+          <div class="contact-block">
+            <div class="contact-label">availability</div>
+            <div class="contact-value">
+              <span class="status-dot"></span>available Q3 2026
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>stonevisions.net</span>
+      <span>© 2026 Darrian</span>
+    </footer>
+
+  </div>
+</body>
+</html>
