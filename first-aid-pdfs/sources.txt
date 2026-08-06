@@ -1,0 +1,18 @@
+# Format: <output-filename>|<primary-url>[|<fallback-url>...]
+# Lines starting with # are ignored.
+
+ifrc-first-aid-guidelines-2025.pdf|https://www.globalfirstaidcentre.org/wp-content/uploads/2026/03/Guidelines-2025_compressed.pdf|https://www.ifrc.org/sites/default/files/2026-03/IFRC%20International%20First%20Aid%2C%20Resuscitation%20and%20Education%20Guidelines%202025.pdf
+
+ifrc-first-aid-guidelines-2020.pdf|https://www.ifrc.org/sites/default/files/2022-02/EN_GFARC_GUIDELINES_2020.pdf|https://www.globalfirstaidcentre.org/wp-content/uploads/2021/02/EN_GFARC_GUIDELINES_2020.pdf
+
+us-army-first-aid-tc-4-02-1.pdf|https://rdl.train.army.mil/catalog-ws/view/100.ATSC/B0A32FAD-8C7A-44A6-8FF4-F754A32F1C30-1453986206542/tc4-02.1wc1x2.pdf
+
+red-cross-first-aid-cpr-aed-ready-reference.pdf|https://www.wcu.edu/WebFiles/PDFs/CSSafetyOfficerCPRAEDRRC.pdf
+
+sja-first-aid-reference-guide.pdf|https://www.sja.org.uk/globalassets/documents/training/r41041rgv10-first-aid-reference-guide.pdf
+
+sja-first-aid-guide-supplement-2021.pdf|https://www.sja.org.uk/globalassets/documents/training/first-aid-guide-supplement-2021-v3.pdf
+
+who-psychological-first-aid.pdf|https://iris.who.int/bitstream/handle/10665/44615/9789241548205_eng.pdf
+
+where-there-is-no-doctor.pdf|https://bdd.pseau.org/outils/ouvrages/hesperian_where_there_is_no_doctor.pdf
